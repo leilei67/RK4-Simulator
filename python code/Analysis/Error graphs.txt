@@ -1,0 +1,104 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jun  1 17:42:23 2026
+
+@author: josep
+"""
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# --- 1. Load the Clean Data ---
+data = pd.read_csv("cleaned_einstein_data.csv")
+
+# --- 2. Extract and Transform Columns ---
+# Square the Einstein radii for the X-axis
+actual_r_ein_sq = data['R_Ein_kpc'] ** 2
+predicted_r_ein_sq = data['Predicted_R_Ein_kpc'] ** 2
+
+# Convert log(Mass) back to actual Mass for the Y-axis
+# If you prefer to keep it as log(Mass), you can just use: mass = data['log_M_Ein_Msun']
+mass = 10 ** data['log_M_Ein_Msun']
+
+# --- 3. Plotting ---
+plt.figure(figsize=(9, 6))
+
+# Plot the Actual Data
+plt.plot(actual_r_ein_sq, mass, 'o', color='blue', label="Actual Data", markersize=5, alpha=0.7)
+
+# Plot the Predicted Model Data
+plt.plot(predicted_r_ein_sq, mass, 'x', color='red', label="Theoretical Model", markersize=5, alpha=0.9)
+
+# (Optional) Add lines of best fit to see the trend difference
+fit_actual = np.polyfit(actual_r_ein_sq, mass, 1)
+fit_predicted = np.polyfit(predicted_r_ein_sq, mass, 1)
+
+# Generate x values for the trend lines
+x_trend = np.linspace(min(actual_r_ein_sq.min(), predicted_r_ein_sq.min()), 
+                      max(actual_r_ein_sq.max(), predicted_r_ein_sq.max()), 100)
+
+plt.plot(x_trend, np.polyval(fit_actual, x_trend), color='blue', linestyle='--', alpha=0.5)
+plt.plot(x_trend, np.polyval(fit_predicted, x_trend), color='red', linestyle='--', alpha=0.5)
+
+# --- 4. Formatting ---
+plt.title("Mass vs. Einstein Radius Squared")
+plt.xlabel("Einstein Radius Squared ($R_{Ein}^2$) [kpc$^2$]")
+plt.ylabel("Mass ($M_{\odot}$)")
+
+# Format Y-axis to scientific notation since masses are huge (e.g., 10^11)
+plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+# plt.savefig("Mass_vs_REin_Squared.png", dpi=300) # Uncomment to save your graph
+plt.show()
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# --- 1. Load Data ---
+data = pd.read_csv("cleaned_einstein_data.csv")
+actual = data['R_Ein_kpc']
+predicted = data['Predicted_R_Ein_kpc']
+
+# --- 2. Calculate Errors (Residuals) ---
+residuals = actual - predicted
+
+# Calculate Metrics
+rmse = np.sqrt(np.mean(residuals**2))
+mae = np.mean(np.abs(residuals))
+mape = np.mean(np.abs(residuals / actual)) * 100
+r2 = 1 - (np.sum(residuals**2) / np.sum((actual - np.mean(actual))**2))
+
+# --- 3. Print the Report ---
+print(f"--- MODEL RELIABILITY REPORT ---")
+print(f"R-Squared: {r2:.4f} (Closer to 1.0 is better)")
+print(f"MAPE:      {mape:.2f}%  (Average % error)")
+print(f"RMSE:      {rmse:.4f} kpc")
+print(f"MAE:       {mae:.4f} kpc")
+print("-" * 32)
+
+# --- 4. Plot the Residuals ---
+plt.figure(figsize=(8, 4))
+
+# Plot Residuals vs Actual Values
+plt.axhline(0, color='black', linestyle='--', linewidth=1.5, zorder=1)
+plt.scatter(actual, residuals, color='red', alpha=0.7, zorder=2)
+
+# Formatting
+plt.title("Residual Plot (Checking for Systematic Error)")
+plt.xlabel("Actual Einstein Radius (kpc)")
+plt.ylabel("Error / Residual (kpc)\n(Actual - Predicted)")
+
+# Add a shaded region representing a "safe" +/- 0.1 kpc error margin
+plt.axhspan(-0.1, 0.1, color='gray', alpha=0.2, label="$\pm 0.1$ kpc Error Band")
+
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+
+# plt.savefig("Residual_Plot.png", dpi=300)
+plt.show()

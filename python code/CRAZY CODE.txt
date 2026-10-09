@@ -1,0 +1,221 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- 1. Physics & Cosmological Constants ---
+G = 6.67430e-11        # Gravitational constant (m^3 kg^-1 s^-2)
+c = 299792458.0        # Speed of light (m/s)
+M_sun = 1.989e30       # Solar mass in kg
+
+# 1 Megaparsec (Mpc) in meters
+Mpc_to_m = 3.086e22 
+
+# Standard distances (assuming typical SLACS z_lens ~ 0.2, z_source ~ 0.6)
+D_L = 800 * Mpc_to_m   # Distance to Lens galaxy
+D_S = 1500 * Mpc_to_m  # Distance to Source galaxy
+D_LS = D_S - D_L       # Distance from Lens to Source
+
+# --- 2. Full SLACS Dataset (Transcribed from your 2 Images) ---
+# b_SIE represents the measured Einstein Radius in arcseconds
+slacs_data = [
+    # IMAGE 1 DATA
+    {"System": "J0008-0004", "b_SIE": 1.16}, {"System": "J0029-0055", "b_SIE": 0.96},
+    {"System": "J0037-0942", "b_SIE": 1.53}, {"System": "J0044+0113", "b_SIE": 0.79},
+    {"System": "J0109+1500", "b_SIE": 0.69}, {"System": "J0157-0056", "b_SIE": 0.79},
+    {"System": "J0216-0813", "b_SIE": 1.16}, {"System": "J0252+0039", "b_SIE": 1.04},
+    {"System": "J0330-0020", "b_SIE": 1.10}, {"System": "J0405-0455", "b_SIE": 0.80},
+    {"System": "J0728+3835", "b_SIE": 1.25}, {"System": "J0737+3216", "b_SIE": 1.00},
+    {"System": "J0822+2652", "b_SIE": 1.17}, {"System": "J0841+3824", "b_SIE": 1.41},
+    {"System": "J0903+4116", "b_SIE": 1.29}, {"System": "J0912+0029", "b_SIE": 1.63},
+    {"System": "J0935-0003", "b_SIE": 0.87}, {"System": "J0936+0913", "b_SIE": 1.09},
+    {"System": "J0946+1006", "b_SIE": 1.38}, {"System": "J0955+0101", "b_SIE": 0.91},
+    {"System": "J0956+5100", "b_SIE": 1.33}, {"System": "J0959+4416", "b_SIE": 0.96},
+    {"System": "J0959+0410", "b_SIE": 0.99}, {"System": "J1016+3859", "b_SIE": 1.09},
+    {"System": "J1020+1122", "b_SIE": 1.20}, {"System": "J1023+4230", "b_SIE": 1.41},
+    {"System": "J1029+0420", "b_SIE": 1.01},
+    
+    # IMAGE 2 DATA
+    {"System": "J1032+5322", "b_SIE": 1.03}, {"System": "J1100+5329", "b_SIE": 1.52},
+    {"System": "J1103+5322", "b_SIE": 1.02}, {"System": "J1106+5228", "b_SIE": 1.23},
+    {"System": "J1112+0826", "b_SIE": 1.49}, {"System": "J1134+6027", "b_SIE": 1.10},
+    {"System": "J1142+1001", "b_SIE": 0.98}, {"System": "J1143-0144", "b_SIE": 1.68},
+    {"System": "J1153+4612", "b_SIE": 1.05}, {"System": "J1204+0358", "b_SIE": 1.31},
+    {"System": "J1205+4910", "b_SIE": 1.22}, {"System": "J1213+6708", "b_SIE": 1.42},
+    {"System": "J1218+0830", "b_SIE": 1.45}, {"System": "J1250+0523", "b_SIE": 1.13},
+    {"System": "J1251-0208", "b_SIE": 0.84}, {"System": "J1402+6321", "b_SIE": 1.35},
+    {"System": "J1403+0006", "b_SIE": 0.83}, {"System": "J1416+5136", "b_SIE": 1.37},
+    {"System": "J1420+6019", "b_SIE": 1.04}, {"System": "J1430+4105", "b_SIE": 1.52},
+    {"System": "J1432+6317", "b_SIE": 1.26}, {"System": "J1436-0000", "b_SIE": 1.12},
+    {"System": "J1443+0304", "b_SIE": 0.81}, {"System": "J1451-0239", "b_SIE": 1.04},
+    {"System": "J1525+3327", "b_SIE": 1.31}, {"System": "J1531-0105", "b_SIE": 1.71},
+    {"System": "J1538+5817", "b_SIE": 1.00}, {"System": "J1621+3931", "b_SIE": 1.29},
+    {"System": "J1627-0053", "b_SIE": 1.23}, {"System": "J1630+4520", "b_SIE": 1.78},
+    {"System": "J1636+4707", "b_SIE": 1.09}, {"System": "J2238-0754", "b_SIE": 1.27},
+    {"System": "J2300+0022", "b_SIE": 1.24}, {"System": "J2303+1422", "b_SIE": 1.62},
+    {"System": "J2321-0939", "b_SIE": 1.60}, {"System": "J2341+0000", "b_SIE": 1.44}
+]
+
+# --- 3. Mathematical Conversions ---
+def calculate_mass_from_einstein_radius(theta_E_arcsec):
+    """
+    Rearranges the Einstein Radius formula to solve for Mass (M).
+    M = (theta_E^2 * c^2 * D_L * D_S) / (4 * G * D_LS)
+    """
+    # Convert arcseconds to radians
+    theta_E_rad = theta_E_arcsec * (np.pi / (180 * 3600))
+    
+    # Calculate mass in kg
+    mass_kg = (theta_E_rad**2 * c**2 * D_L * D_S) / (4 * G * D_LS)
+    return mass_kg
+
+# --- 4. RK4 Differential Equations ---
+def get_derivatives(state, M):
+    x, y, vx, vy = state
+    r = np.sqrt(x**2 + y**2)
+    
+    # General Relativity correction for a point mass
+    a_mag = (2 * G * M) / (r**2)
+    ax = -a_mag * (x / r)
+    ay = -a_mag * (y / r)
+    
+    return np.array([vx, vy, ax, ay])
+
+def rk4_step(state, dt, M):
+    k1 = get_derivatives(state, M)
+    k2 = get_derivatives(state + 0.5 * dt * k1, M)
+    k3 = get_derivatives(state + 0.5 * dt * k2, M)
+    k4 = get_derivatives(state + dt * k3, M)
+    
+    return state + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+
+def simulate_deflection(mass_kg, impact_parameter_m):
+    """Runs the RK4 simulation at the physical distance of the Einstein radius."""
+    x_start = -10.0 * impact_parameter_m
+    state = np.array([x_start, impact_parameter_m, c, 0.0]) # [x, y, vx, vy]
+    
+    # Step size dynamically scaled based on the vast galactic distances
+    dt = (impact_parameter_m / c) * 0.05 
+    
+    # Integrate until the photon travels far past the galaxy
+    while state[0] < 10.0 * impact_parameter_m:
+        state = rk4_step(state, dt, mass_kg)
+
+    vx_final, vy_final = state[2], state[3]
+    deflection_radians = np.abs(np.arctan2(vy_final, vx_final))
+    return deflection_radians * (180 * 3600 / np.pi) # Return in arcsec
+
+# --- 5. Run the Pipeline on all 59 Systems ---
+results = []
+print(f"Processing all {len(slacs_data)} SLACS Lenses via RK4 Integration. Please wait...\n")
+
+for row in slacs_data:
+    system = row["System"]
+    b_sie = row["b_SIE"]
+    
+    # 1. Reverse-engineer the mass from the table's Einstein Radius
+    estimated_mass_kg = calculate_mass_from_einstein_radius(b_sie)
+    mass_in_solar = estimated_mass_kg / M_sun
+    
+    # 2. Calculate physical impact parameter in meters
+    b_sie_rad = b_sie * (np.pi / (180 * 3600))
+    impact_parameter_m = b_sie_rad * D_L
+    
+    # 3. Run RK4 Simulation
+    rk4_deflection = simulate_deflection(estimated_mass_kg, impact_parameter_m)
+    
+    results.append({
+        "System Name": system,
+        "Measured b_SIE (arcsec)": b_sie,
+        "Est. Mass (Trillion M_sun)": mass_in_solar / 1e12,
+        "RK4 Deflection (arcsec)": rk4_deflection
+    })
+
+# Format and display the results using Pandas
+results_df = pd.DataFrame(results)
+pd.set_option('display.max_rows', None) # Ensures all 59 rows print to the console
+print(results_df.to_string(index=False, float_format="%.3f"))
+
+# --- 6. Plotting the Comparison ---
+plt.figure(figsize=(10, 6))
+plt.style.use('dark_background')
+
+# Scatter plot for the individual data points
+plt.scatter(results_df["Est. Mass (Trillion M_sun)"], results_df["Measured b_SIE (arcsec)"], 
+            color='cyan', label='Measured Data (b_SIE)', s=60, alpha=0.8, edgecolors='white')
+
+# Add a subtle trend line
+plt.plot(results_df["Est. Mass (Trillion M_sun)"].sort_values(), 
+         results_df.loc[results_df["Est. Mass (Trillion M_sun)"].sort_values().index, "Measured b_SIE (arcsec)"], 
+         color='white', linestyle='--', alpha=0.3)
+
+plt.title('Calculated Lens Mass vs. Measured Einstein Radius (All 59 SLACS Lenses)', color='white', pad=15)
+plt.xlabel('Estimated Lens Mass (Trillions of Solar Masses)', color='white')
+plt.ylabel('Measured Einstein Radius / b_SIE (arcseconds)', color='white')
+plt.grid(True, alpha=0.2)
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# --- 7. Statistical Error Analysis ---
+print("\n--- Error Analysis ---")
+
+# 1. Calculate the Theoretical Deflection Angle (Analytical GR Formula)
+# alpha = 4GM / (c^2 * impact_parameter)
+results_df["Analytical Deflection (arcsec)"] = (
+    (4 * G * (results_df["Est. Mass (Trillion M_sun)"] * 1e12 * M_sun)) / 
+    (c**2 * (results_df["Measured b_SIE (arcsec)"] * (np.pi / (180 * 3600)) * D_L))
+) * (180 * 3600 / np.pi)
+
+# 2. Calculate the Errors
+results_df["Absolute Error"] = np.abs(results_df["RK4 Deflection (arcsec)"] - results_df["Analytical Deflection (arcsec)"])
+results_df["% Error"] = (results_df["Absolute Error"] / results_df["Analytical Deflection (arcsec)"]) * 100
+
+# 3. Overall Metrics
+mae = results_df["Absolute Error"].mean()
+rmse = np.sqrt((results_df["Absolute Error"]**2).mean())
+mean_pct_error = results_df["% Error"].mean()
+
+print(f"Mean Absolute Error (MAE): {mae:.6f} arcsec")
+print(f"Root Mean Square Error (RMSE): {rmse:.6f} arcsec")
+print(f"Average Percentage Error: {mean_pct_error:.4f} %\n")
+
+# Show the top 5 largest errors to see where the simulation struggled most
+print("Top 5 Largest Simulation Errors:")
+print(results_df.nlargest(5, "% Error")[["System Name", "Measured b_SIE (arcsec)", "RK4 Deflection (arcsec)", "% Error"]].to_string(index=False))
+
+# --- 8. Error Visualization (Parity & Residuals Plot) ---
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+fig.patch.set_facecolor('black')
+
+# Plot 1: Parity Plot (Model vs Analytical)
+ax1.set_facecolor('black')
+ax1.scatter(results_df["Analytical Deflection (arcsec)"], results_df["RK4 Deflection (arcsec)"], 
+            color='cyan', alpha=0.7, edgecolor='white')
+
+# Perfect 1:1 line
+min_val = results_df["Analytical Deflection (arcsec)"].min()
+max_val = results_df["Analytical Deflection (arcsec)"].max()
+ax1.plot([min_val, max_val], [min_val, max_val], 'r--', label='Perfect Match (1:1)')
+
+ax1.set_title("RK4 Model vs. Analytical Deflection", color='white')
+ax1.set_xlabel("Analytical Deflection (arcsec)", color='white')
+ax1.set_ylabel("RK4 Deflection (arcsec)", color='white')
+ax1.tick_params(colors='white')
+ax1.legend()
+ax1.grid(color='white', alpha=0.1)
+
+# Plot 2: Residuals Plot (% Error)
+ax2.set_facecolor('black')
+ax2.axhline(0, color='red', linestyle='--', linewidth=1.5, zorder=1)
+ax2.scatter(results_df["Analytical Deflection (arcsec)"], results_df["% Error"], 
+            color='magenta', alpha=0.7, edgecolor='white', zorder=2)
+
+ax2.set_title("Simulation Residuals (% Error)", color='white')
+ax2.set_xlabel("Analytical Deflection (arcsec)", color='white')
+ax2.set_ylabel("Percentage Error (%)", color='white')
+ax2.tick_params(colors='white')
+ax2.grid(color='white', alpha=0.1)
+
+plt.tight_layout()
+plt.show()

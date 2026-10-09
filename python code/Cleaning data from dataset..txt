@@ -1,0 +1,24 @@
+import pandas as pd
+import numpy as np
+
+# Load the new CSV file containing the distances
+file_path = 'lens_data_with_distances.csv'
+df = pd.read_csv(file_path)
+
+# Clean the data in memory
+# Replace common "missing data" placeholders with actual NaN values
+df.replace(['...', '', ' ', 'NaN', 'nan'], np.nan, inplace=True)
+
+# Remove rows that contain any NaN values, saving it to a new dataframe variable
+df_cleaned = df.dropna().copy()
+
+# Optional: Add row numbers for easier reading
+df_cleaned.insert(0, 'Row Number', range(1, len(df_cleaned) + 1))
+
+# Display the row counts to confirm the cleaning worked
+print(f"Original rows: {len(df)}")
+print(f"Cleaned rows: {len(df_cleaned)}\n")
+
+# Display the final, cleaned table
+# (If using a Jupyter Notebook, you can just use `display(df_cleaned)` instead)
+print(df_cleaned.to_markdown(index=False))
