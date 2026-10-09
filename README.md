@@ -1,6 +1,6 @@
 # RK4 Simulator
 
-A physics/mathematical simulator that predicts the bending of light around objects of heavy mass, using binary search to accurately compute Einstein ring radii.
+A mathematical physics simulator that predicts the bending of light around objects of heavy mass, using binary search to accurately compute Einstein ring radii.
 
 ---
 
